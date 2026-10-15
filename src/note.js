@@ -16,12 +16,15 @@ export class Note {
   }
 
   static newId(title) {
+    // Per-process counter: Date.now() alone can collide when two notes are
+    // created within the same millisecond.
+    Note._counter = (Note._counter || 0) + 1;
     const slug = title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .slice(0, 40) || 'note';
-    return `${slug}-${Date.now().toString(36)}`;
+    return `${slug}-${Date.now().toString(36)}${Note._counter > 1 ? `-${Note._counter}` : ''}`;
   }
 
   /** All text the search index consumes. */
@@ -63,7 +66,7 @@ export class Note {
     return new Note({
       id,
       title: header.title,
-      body: match[2].trimEnd(),
+      body: match[2].replace(/^\r?\n+/, '').trimEnd(),
       tags,
       createdAt: header.created ? new Date(header.created) : new Date(),
       updatedAt: header.updated ? new Date(header.updated) : new Date(),
